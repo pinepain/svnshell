@@ -30,25 +30,7 @@ set_time_limit(15 * 60); // 15 minutes
 error_reporting(E_ALL ^ E_NOTICE ^ E_WARNING);
 require dirname(__FILE__) . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'autoloader.php';
 
-$short = 'hvcdb::m::a::p::s::t::u::';
-$long  = array (
-    'help',
-    'verbose',
-    'colored',
-    'debug',
-    'between::',
-    'message::',
-    'author::',
-    'password::',
-    'stop::',
-    'target::',
-    'user::',
-);
-
-$opts = getopt($short, $long);
-
-if (isset($opts['h']) || isset($opts['help'])) {
-    echo <<<HEDEDOC
+$help = <<<HEDEDOC
 Command line utility to find revisions by message, author within a date and time range
 
 Usage:
@@ -63,6 +45,7 @@ Options:
     -s, --stop=REV          do not check revisions less than REV
     -b, --between=FROM~TO   datetime interval to match in php's DateTime constructor format
                             (see http://php.net/manual/en/datetime.formats.php for more info)
+    -f, --format=COLUMNS    columns to be shown in output, default - all columns, for empty COLUN 'R' will be used
 
     -t, --target=TARGET     repository url, if not set current directory repo url will be used
                             (note, TARGE@REV also supported)
@@ -74,13 +57,24 @@ Options:
     -v, --verbose           show additional output
     -d, --debug             show debug output
 
+Input format:
+    COLUMNS comma-separated column names which are listed below. Unknown columns are ignored
+            T - line type (has no affect for extra information and debug output)
+            R - revision number (default for empty COLUMNS value)
+            A - author
+            D - date and time
+            C - revision comment
+
+    TARGET  <url or path>[@<revision>]
+
 Output format:
-    <line type> <revision> <author> <date and time> <comment>
+
+    <line type> <revision> <author> <date and time> <revision comment>
 
     Line type may is a first character on each line and may be:
         !           - comment (only in verbose mode)
         #           - extra debug info (only in verbose mode when debug enabled)
-        <no type>   - line with data
+        r           - line with data
 
 Pattern syntax:
     To enable regular expression usage PATTERN should starts with the slash character (/)
@@ -88,64 +82,13 @@ Pattern syntax:
 Copyright (c) 2012 Ben Pinepain <pinepain@gmail.com>
 
 HEDEDOC;
-    exit();
-}
 
-define ('TARGET', isset($opts['t']) && !empty($opts['t'])
-    ? $opts['t']
-    : (isset($opts['target']) && !empty($opts['target'])
-        ? $opts['target']
-        : getenv('SVN_TARGET'))
-);
+$shell = new SvnShell('abcdfhmpstuv',
+                      array ('f' => 'R',
+                             'a' => '/.*/',
+                             'm' => '/.*/',
+                             'b' => 'today~now',
+                             's' => 1),
+                      $help);
 
-define ('USER', isset($opts['u']) && !empty($opts['u'])
-    ? $opts['u']
-    : (isset($opts['user']) && !empty($opts['user'])
-        ? $opts['user']
-        : getenv('SVN_USERNAME'))
-);
-
-define ('PASSWORD', isset($opts['p']) && !empty($opts['p'])
-    ? $opts['p']
-    : (isset($opts['password']) && !empty($opts['password'])
-        ? $opts['password']
-        : getenv('SVN_PASSWORD'))
-);
-
-define ('AUTHOR', isset($opts['a']) && !empty($opts['a'])
-    ? $opts['a']
-    : (isset($opts['author']) && !empty($opts['author'])
-        ? $opts['author']
-        : '/.*/')
-);
-
-define ('MESSAGE', isset($opts['m']) && !empty($opts['m'])
-    ? $opts['m']
-    : (isset($opts['message']) && !empty($opts['message'])
-        ? $opts['message']
-        : '/.*/')
-);
-
-define ('BETWEEN', isset($opts['b']) && !empty($opts['b'])
-    ? $opts['b']
-    : (isset($opts['between']) && !empty($opts['between'])
-        ? $opts['between']
-        : 'today~now')
-);
-
-define ('STOP', isset($opts['s']) && (int)$opts['s'] > 0
-    ? (int)$opts['s']
-    : (isset($opts['stop']) && (int)$opts['stop']
-        ? (int)$opts['stop']
-        : '1')
-);
-
-
-define ('VERBOSE', isset($opts['v']) || isset($opts['verbose']));
-define ('DEBUG', isset($opts['d']) || isset($opts['debug']));
-
-define ('COLORED', posix_isatty(STDOUT) && isset($opts['c']) || isset($opts['colored']));
-
-$shell = new SvnShell(USER, PASSWORD, TARGET);
-
-$shell->showMatchedRevisions(MESSAGE, AUTHOR, STOP, BETWEEN);
+$shell->showMatchedRevisions();

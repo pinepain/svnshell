@@ -31,27 +31,8 @@ error_reporting(E_ALL ^ E_NOTICE ^ E_WARNING);
 require dirname(__FILE__) . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'autoloader.php';
 
 
-$short = 'hvcdr::t::u::p::';
-$long  = array (
-    'help',
-    'verbose',
-    'colored',
-    'debug',
-    'revisions::',
-    'target::',
-    'user::',
-    'password::',
-);
 
-$opts = getopt($short, $long);
-
-if ((!isset($opts['r']) || empty($opts['r'])) && (!isset($opts['revisions']) || empty($opts['revisions']))) {
-    $opts['r'] = stream_get_contents(fopen("php://stdin", "r"));
-    $opts['r'] = preg_replace('/\s+/', ',', $opts['r']);
-}
-
-if (isset($opts['h']) || isset($opts['help'])) {
-    echo <<<HEDEDOC
+$help = <<<HEDEDOC
 Command line utility to see affected files by specific revisions
 
 Usage:
@@ -67,6 +48,7 @@ Usage:
         both are doing the same, while overlapped revision numbers are merged in a favor more complex range
 
 Options:
+    -f, --format=COLUMNS    columns to be shown in output, default - all columns, for empty COLUN 'R' will be used
     -r, --revisions=REVS    revisions list to check, if not REVS given read them from STDIN (items on separate lines
                             will be glued with comma ',')
     -t, --target=TARGET     repository url, if not set current directory repo url will be used
@@ -80,6 +62,12 @@ Options:
     -d, --debug             show debug output
 
 Input format:
+    COLUMNS comma-separated column names which are listed below. Unknown columns are ignored
+            T - line type (has no affect for extra information and debug output)
+            R - revision number
+            A - author
+            P - path under revision root  (default for empty COLUMNS value)
+
     TARGET  <url or path>[@<revision>]
     REVS    Comma-separated *single revision numbers* or/and *colon-separated ranges*. HEAD will be transformed to the
             latest TARGET revision or number, all non-numeric characters excluding comma (,) and colon (:) removed.
@@ -98,37 +86,8 @@ Output format:
 Copyright (c) 2012 Ben Pinepain <pinepain@gmail.com>
 
 HEDEDOC;
-    exit();
-}
 
-define ('TARGET', isset($opts['t']) && !empty($opts['t'])
-    ? $opts['t']
-    : (isset($opts['target']) && !empty($opts['target'])
-        ? $opts['target']
-        : getenv('SVN_TARGET'))
-);
+$shell = new SvnShell('cdfhprtuv', array('f'=>'P'), $help);
 
-define ('USER', isset($opts['u']) && !empty($opts['u'])
-    ? $opts['u']
-    : (isset($opts['user']) && !empty($opts['user'])
-        ? $opts['user']
-        : getenv('SVN_USERNAME'))
-);
 
-define ('PASSWORD', isset($opts['p']) && !empty($opts['p'])
-    ? $opts['p']
-    : (isset($opts['password']) && !empty($opts['password'])
-        ? $opts['password']
-        : getenv('SVN_PASSWORD'))
-);
-
-define ('VERBOSE', isset($opts['v']) || isset($opts['verbose']));
-define ('DEBUG', isset($opts['d']) || isset($opts['debug']));
-
-define ('COLORED', posix_isatty(STDOUT) && isset($opts['c']) || isset($opts['colored']));
-
-$shell = new \SvnShell(USER, PASSWORD, TARGET);
-
-$revs = $shell->getRevisionsListFromString(isset($opts['r']) ? $opts['r'] : $opts['revisions']);
-
-$shell->showAffectedFilesInRevisionsList($revs);
+$shell->showAffectedFilesInRevisions();
