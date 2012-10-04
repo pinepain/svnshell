@@ -1,4 +1,4 @@
-#!/usr/local/bin/php
+#!/usr/bin/php
 <?php
 /**
  * Command line utility to find revisions by message, author within a date and time range
@@ -84,11 +84,13 @@ Copyright (c) 2012 Ben Pinepain <pinepain@gmail.com>
 HEDEDOC;
 
 $shell = new SvnShell('abcdfhmpstuv',
-                      array ('f' => 'R',
-                             'a' => '/.*/',
-                             'm' => '/.*/',
-                             'b' => 'today~now',
-                             's' => 1),
+                      array('f' => 'R',
+                            'a' => '/.*/',
+                            'm' => '/.*/',
+                            'b' => 'today~now',
+                            's' => 1,
+                            't' => '.',
+                      ),
                       $help);
 
 $shell->showMatchedRevisions();

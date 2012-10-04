@@ -28,14 +28,16 @@
 class SvnShell {
     private $c;
 
-    private $info = array ();
+    private $command_args = '';
 
-    private $colors = array (
+    private $info = array();
+
+    private $colors = array(
         'A'            => 'green',
         'D'            => 'red',
         'M'            => 'blue',
         'R'            => 'cyan',
-        '!'            => 'dark',
+        '!'            => 'magenta',
         'line_type'    => 'yellow',
         'found_rev'    => 'red',
         'found_author' => 'green',
@@ -43,62 +45,63 @@ class SvnShell {
         'found_msg'    => 'white',
         'err'          => 'bold_red',
         'debug'        => 'yellow',
+        'clear'        => 'clear'
     );
 
-    private $opts = array (
-        'a' => array (
+    private $opts = array(
+        'a' => array(
             'name' => 'author',
             'val'  => '::'
         ),
-        'b' => array (
+        'b' => array(
             'name' => 'between',
             'val'  => '::'
         ),
-        'c' => array (
+        'c' => array(
             'name' => 'colored',
             'val'  => ''
         ),
-        'd' => array (
+        'd' => array(
             'name' => 'debug',
             'val'  => ''
         ),
-        'f' => array (
+        'f' => array(
             'name' => 'format',
             'val'  => '::'
         ),
-        'h' => array (
+        'h' => array(
             'name' => 'help',
             'val'  => ''
         ),
-        'm' => array (
+        'm' => array(
             'name' => 'message',
             'val'  => '::'
         ),
-        'p' => array (
+        'p' => array(
             'name' => 'password',
             'val'  => '::'
         ),
-        'r' => array (
+        'r' => array(
             'name' => 'revisions',
             'val'  => '::'),
-        's' => array (
+        's' => array(
             'name' => 'stop',
             'val'  => '::'),
-        't' => array (
+        't' => array(
             'name' => 'target',
             'val'  => '::'),
-        'u' => array (
+        'u' => array(
             'name' => 'user',
             'val'  => '::'
         ),
-        'v' => array (
+        'v' => array(
             'name' => 'verbose',
             'val'  => ''
         ),
     );
 
 
-    public function __construct($used_opts, array $defaults = array (), $help = '') {
+    public function __construct($used_opts, array $defaults = array(), $help = '') {
         $this->initConfig($used_opts, $defaults);
 
         if ($this->getCfg('help')) {
@@ -106,27 +109,26 @@ class SvnShell {
             exit(0);
         }
 
-        $repo = empty($repo) ? '.' : $repo;
-
         if ($this->getCfg('colored')) {
             $this->c = new ANSIColor();
         }
 
         // get info about subversion copy
-        $command = 'svn info --xml --non-interactive --no-auth-cache';
+        $this->command_args = '--xml --non-interactive --no-auth-cache';
 
-        if ($this->getCfg('username')) {
-            svn_auth_set_parameter(SVN_AUTH_PARAM_DEFAULT_USERNAME, $this->getCfg('username'));
-            $command .= ' --username ' . $this->getCfg('username');
+        if ($this->getCfg('user')) {
+//            svn_auth_set_parameter(SVN_AUTH_PARAM_DEFAULT_USERNAME, $this->getCfg('username'));
+            $this->command_args .= ' --username ' . $this->getCfg('user');
         }
 
         if ($this->getCfg('password')) {
-            svn_auth_set_parameter(SVN_AUTH_PARAM_DEFAULT_PASSWORD, $this->getCfg('password'));
-            $command .= ' --password ' . $this->getCfg('password');
+//            svn_auth_set_parameter(SVN_AUTH_PARAM_DEFAULT_PASSWORD, $this->getCfg('password'));
+            $this->command_args .= ' --password ' . $this->getCfg('password');
         }
 
-        $command .= ' ' . $repo;
-        $this->printDebug("# username: " . $this->getCfg('username') . "  password: " . $this->getCfg('password') . "  target: " . $this->getCfg('target'));
+        $command = 'svn info ' . $this->command_args . ' ' . $this->getCfg('target') . ' 2>&1';
+
+        $this->printDebug("# username: " . $this->getCfg('user') . "  password: " . $this->getCfg('password') . "  target: " . $this->getCfg('target'));
         $this->printDebug("# command: $command");
 
         $output = shell_exec($command);
@@ -139,11 +141,11 @@ class SvnShell {
         xml_parser_free($parser);
 
         if (!isset($tags['url'])) {
-            $this->formatString("Could not get repository info", 'err');
+            fprintf(STDERR, $this->formatString("Could not get repository info", 'err') . "\n");
             die();
         }
 
-        $this->info = array (
+        $this->info = array(
             'url'      => $values[$tags['url'][0]]['value'],
             'root'     => $values[$tags['root'][0]]['value'],
             'revision' => $values[$tags['commit'][0]]['attributes']['revision'],
@@ -174,7 +176,7 @@ class SvnShell {
             $str = '! from: ' . str_pad($start_rev, 8, ' ', STR_PAD_RIGHT) . ' to: ' . str_pad($stop_rev, 8, ' ', STR_PAD_RIGHT)
                 . '  between: ' . $between[0]->format(DateTime::RFC1036) . ' and: ' . $between[1]->format(DateTime::RFC1036)
                 . ' message: ' . $message . ' author: ' . $author;
-            echo $this->formatString($str, '!'), "\n";
+            echo $this->formatString($str, '!') . "\n";
         }
 
         $revs = $this->getRevisionsListFromString($stop_rev . ':' . $start_rev);
@@ -187,7 +189,6 @@ class SvnShell {
             $this->printDebug('# check ' . $rev . ': ', false);
 
             $info = $this->getRevisionLog($rev);
-
 
             if (!$info) {
                 $this->printDebug('no commits under given url in this revision');
@@ -237,14 +238,14 @@ class SvnShell {
 
             $format = $this->getCfg('format');
 
-            $output = array ();
+            $output = array();
 
             if (in_array('T', $format)) {
                 $output[] = $this->formatString('r', 'line_type');
             }
 
             if (in_array('R', $format)) {
-                $output[] = $this->formatString(str_pad($info['rev'], 7, ' ', STR_PAD_LEFT), 'found_rev');
+                $output[] = $this->formatString(str_pad($rev, 7, ' ', STR_PAD_LEFT), 'found_rev');
             }
 
             if (in_array('A', $format)) {
@@ -260,15 +261,16 @@ class SvnShell {
                 ;
             }
 
-            $found_revs_count ++;
+            $found_revs_count++;
 
             if (!empty($output)) {
-                echo join('  ', $output), "\n";
+                echo join('  ', $output);
+                echo $this->formatString(" \n", 'clear');
             }
         }
 
 //        if ($this->getCfg('verbose')) {
-            echo $this->formatString("! $found_revs_count revisions matched", '!'), "\n";
+        echo $this->formatString("! $found_revs_count revisions matched", '!'), "\n";
 //        }
 
     }
@@ -280,11 +282,11 @@ class SvnShell {
             echo $this->formatString('! check ' . count($revs_list) . " revision(s)", '!'), "\n";
         }
 
-        $affected = array (
-            'A' => array (),
-            'D' => array (),
-            'M' => array (),
-            'R' => array (),
+        $affected = array(
+            'A' => array(),
+            'D' => array(),
+            'M' => array(),
+            'R' => array(),
         );
 
         foreach ($revs_list as $rev) {
@@ -356,7 +358,7 @@ class SvnShell {
 
     private function initConfig($used_opts, $defaults) {
         $short = '';
-        $long  = array ();
+        $long  = array();
 
         $used_opts = str_split($used_opts, 1);
 
@@ -378,7 +380,7 @@ class SvnShell {
                 throw new Exception("No handler defined for {$this->opts[$o]['name']} option (method $handler not found)");
             }
 
-            $this->opts[$this->opts[$o]['name']] = call_user_func(array (&$this, $handler),
+            $this->opts[$this->opts[$o]['name']] = call_user_func(array(&$this, $handler),
                                                                   isset($opts[$o]) ? $opts[$o] : null,
                                                                   isset($opts[$this->opts[$o]['name']]) ? $opts[$this->opts[$o]['name']] : null,
                                                                   isset($defaults[$o]) ? $defaults[$o] : null);
@@ -527,7 +529,7 @@ class SvnShell {
         return $str;
     }
 
-    public function printDebug($str, $add_new_line = true) {
+    private function printDebug($str, $add_new_line = true) {
         if ($this->getCfg('debug') && $this->getCfg('verbose')) {
             echo $this->formatString($str, 'debug', $add_new_line), ($add_new_line ? "\n" : '');
         }
@@ -538,7 +540,7 @@ class SvnShell {
         $str = preg_replace('/[^0-9:,]/', '', $str);
         $str = explode(',', $str);
 
-        $revs = array ();
+        $revs = array();
 
         foreach ($str as $s) {
             if (empty($s)) {
@@ -549,7 +551,7 @@ class SvnShell {
 
             if (count($range) == 2) {
                 if ($range[0] > $range[1]) {
-                    list ($range[1], $range[0]) = array ($range[0], $range[1]);
+                    list ($range[1], $range[0]) = array($range[0], $range[1]);
                 }
 
                 // max revision number should be less or equal to the head
@@ -570,26 +572,59 @@ class SvnShell {
         return $revs;
     }
 
-    private function getRevisionLog($rev) {
-        $log = svn_log($this->info['url'], $rev); //, $rev_start, $rev_end);
+    private function getRevisionLog($rev, $with_path = false) {
+        if ($with_path) {
+            $with_path = ' --verbose    ';
+        } else {
+            $with_path = '';
+        }
 
-        if (false === $log) {
-            $this->formatString('Auth error', 'err');
+        $command = 'svn log --limit 1 ' . $with_path . $this->command_args . ' ' . $this->info['url'] . '@' . $rev . ' 2>&1';
+        $this->printDebug("# command: $command");
+
+        $output = shell_exec($command);
+
+        $parser = xml_parser_create();
+        xml_parser_set_option($parser, XML_OPTION_CASE_FOLDING, 0);
+        xml_parser_set_option($parser, XML_OPTION_SKIP_WHITE, 1);
+        xml_parse_into_struct($parser, $output, $values, $tags);
+        xml_parser_free($parser);
+
+        if (!isset($tags['log'])) {
+            fprintf(STDERR, $this->formatString("Could not get repository info", 'err') . "\n");
             die();
         }
 
-        return $log[0];
+        $ret = array(
+            'author' => $values[$tags['author'][0]]['value'],
+            'date'   => $values[$tags['date'][0]]['value'],
+            'msg'    => $values[$tags['msg'][0]]['value'],
+        );
+
+        if ($with_path && isset($tags['path'])) {
+            $ret['paths'] = array();
+
+            foreach ($tags['path'] as $pos) {
+                $ret['paths'][] = array(
+                    'kind'   => $values[$pos]['attributes']['kind'],
+                    'action' => $values[$pos]['attributes']['action'],
+                    'path'   => $values[$pos]['value'],
+                );
+            }
+        }
+
+        return $ret;
     }
 
     private function getAffectedFilesInRevision($rev) {
-        $affected = array (
-            'A' => array (),
-            'D' => array (),
-            'M' => array (),
-            'R' => array (),
+        $affected = array(
+            'A' => array(),
+            'D' => array(),
+            'M' => array(),
+            'R' => array(),
         );
 
-        $log = $this->getRevisionLog($rev);
+        $log = $this->getRevisionLog($rev, true);
 
         if (empty($log['paths'])) {
             return $affected;
@@ -607,10 +642,10 @@ class SvnShell {
                 case 'D':
                 case 'M':
                 case 'R': // props changed
-                    $affected[$path['action']][$path['path']] = array ('author' => $log['author'], 'rev' => $log['rev']);
+                    $affected[$path['action']][$path['path']] = array('author' => $log['author'], 'rev' => $rev);
                     break;
                 default:
-                    echo $this->formatString("ERROR: UNKNOWN STATUS: " . $path['action'] . ", path: " . $path['path'], 'err'), "\n";
+                    fprintf(STDERR, $this->formatString("ERROR: UNKNOWN STATUS: " . $path['action'] . ", path: " . $path['path'], 'err') . "\n");
                     die();
             }
         }
@@ -639,13 +674,15 @@ class SvnShell {
             try {
                 $p = new DateTime($p);
             } catch (Exception $e) {
-                $this->formatString('Invalid DateTime string: ' . $p, 'err');
+                fprintf(STDERR, $this->formatString('Invalid DateTime string: ' . $p, 'err') . "\n");
                 die();
             }
         }
+
         if ($parts[1] < $parts[0]) {
             list ($parts[1], $parts[0]) = $parts;
         }
+
         return $parts;
     }
 

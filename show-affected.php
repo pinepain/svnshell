@@ -1,4 +1,4 @@
-#!/usr/local/bin/php
+#!/usr/bin/php
 <?php
 /**
  * Command line utility to see affected files by specific revisions
@@ -29,7 +29,6 @@
 set_time_limit(15 * 60); // 15 minutes
 error_reporting(E_ALL ^ E_NOTICE ^ E_WARNING);
 require dirname(__FILE__) . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'autoloader.php';
-
 
 
 $help = <<<HEDEDOC
@@ -87,7 +86,7 @@ Copyright (c) 2012 Ben Pinepain <pinepain@gmail.com>
 
 HEDEDOC;
 
-$shell = new SvnShell('cdfhprtuv', array('f'=>'P'), $help);
+$shell = new SvnShell('cdfhprtuv', array('f'=> 'P', 't' => '.'), $help);
 
 
 $shell->showAffectedFilesInRevisions();
