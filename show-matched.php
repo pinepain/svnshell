@@ -83,7 +83,7 @@ Copyright (c) 2012 Ben Pinepain <pinepain@gmail.com>
 
 HEDEDOC;
 
-$shell = new SvnShell('abcdfhmpstuv',
+$shell = new SvnShell('habcdfmpstuv',
                       array('f' => 'R',
                             'a' => '/.*/',
                             'm' => '/.*/',

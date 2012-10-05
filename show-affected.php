@@ -86,7 +86,7 @@ Copyright (c) 2012 Ben Pinepain <pinepain@gmail.com>
 
 HEDEDOC;
 
-$shell = new SvnShell('cdfhprtuv', array('f'=> 'P', 't' => '.'), $help);
+$shell = new SvnShell('hcdfprtuv', array('f'=> 'P', 't' => '.'), $help);
 
 
 $shell->showAffectedFilesInRevisions();

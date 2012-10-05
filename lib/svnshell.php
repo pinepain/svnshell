@@ -104,6 +104,8 @@ class SvnShell {
     public function __construct($used_opts, array $defaults = array(), $help = '') {
         $this->initConfig($used_opts, $defaults);
 
+        var_dump($this->getCfg('help'));
+
         if ($this->getCfg('help')) {
             echo $help;
             exit(0);
@@ -375,6 +377,11 @@ class SvnShell {
 
 
         foreach ($used_opts as $o) {
+
+            if ($this->getCfg('help')) {
+                break;
+            }
+
             $handler = '_' . __FUNCTION__ . ucfirst($this->opts[$o]['name']);
             if (!method_exists($this, $handler)) {
                 throw new Exception("No handler defined for {$this->opts[$o]['name']} option (method $handler not found)");
@@ -383,7 +390,9 @@ class SvnShell {
             $this->opts[$this->opts[$o]['name']] = call_user_func(array(&$this, $handler),
                                                                   isset($opts[$o]) ? $opts[$o] : null,
                                                                   isset($opts[$this->opts[$o]['name']]) ? $opts[$this->opts[$o]['name']] : null,
+
                                                                   isset($defaults[$o]) ? $defaults[$o] : null);
+
         }
     }
 
@@ -505,7 +514,7 @@ class SvnShell {
     }
 
     private function _initConfigHelp($short, $long, $default) {
-        return $this->__initConfigNonEmptyShortOrLongOrDefaultIf($short, $long, $default);
+        return (null !== $short || null !== $long || null !== $default);
     }
 
     /**
