@@ -104,8 +104,6 @@ class SvnShell {
     public function __construct($used_opts, array $defaults = array(), $help = '') {
         $this->initConfig($used_opts, $defaults);
 
-        var_dump($this->getCfg('help'));
-
         if ($this->getCfg('help')) {
             echo $help;
             exit(0);
