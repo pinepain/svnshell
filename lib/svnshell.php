@@ -269,9 +269,9 @@ class SvnShell {
             }
         }
 
-//        if ($this->getCfg('verbose')) {
-        echo $this->formatString("! $found_revs_count revisions matched", '!'), "\n";
-//        }
+        if ($this->getCfg('verbose')) {
+            echo $this->formatString("! $found_revs_count revisions matched", '!'), "\n";
+        }
 
     }
 
