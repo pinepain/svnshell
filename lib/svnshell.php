@@ -128,6 +128,8 @@ class SvnShell {
 
         $command = 'svn info ' . $this->command_args . ' ' . $this->getCfg('target') . ' 2>&1';
 
+        // TODO: if local repo version is older then remote repo version prompt warning
+
         $this->printDebug("# username: " . $this->getCfg('user') . "  password: " . $this->getCfg('password') . "  target: " . $this->getCfg('target'));
         $this->printDebug("# command: $command");
 
@@ -289,8 +291,11 @@ class SvnShell {
             'R' => array(),
         );
 
+        // TODO: fix bug when added files in younger revision not deleted from list when it deleted
         foreach ($revs_list as $rev) {
             $_affected = $this->getAffectedFilesInRevision($rev);
+
+            $this->printDebug('# files for revision ' . $rev);
 
             foreach ($_affected['A'] as $path => $info) {
 
@@ -302,6 +307,9 @@ class SvnShell {
             }
 
             foreach ($_affected['D'] as $path => $info) {
+                if (array_key_exists($path, $affected['A'])) {
+                    echo "$path was added in prev rev\n";
+                }
 
                 unset($affected['A'][$path]);
                 unset($affected['M'][$path]);
@@ -328,6 +336,7 @@ class SvnShell {
 
         foreach ($affected as $type => $items) {
             ksort($items);
+
             foreach ($items as $path => $info) {
 
                 $output = array();
@@ -575,6 +584,8 @@ class SvnShell {
                 $revs[$range[0]] = (int)$range[0];
             }
         }
+
+        sort($revs);
 
         return $revs;
     }
