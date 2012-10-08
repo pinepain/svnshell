@@ -65,6 +65,7 @@ Input format:
             T - line type (has no affect for extra information and debug output)
             R - revision number
             A - author
+            K - path kind ('file' or 'dir'), used only with P column.
             P - path under revision root  (default for empty COLUMNS value)
 
     TARGET  <url or path>[@<revision>]

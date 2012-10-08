@@ -291,13 +291,35 @@ class SvnShell {
             'R' => array(),
         );
 
-        // TODO: fix bug when added files in younger revision not deleted from list when it deleted
         foreach ($revs_list as $rev) {
             $_affected = $this->getAffectedFilesInRevision($rev);
 
             $this->printDebug('# files for revision ' . $rev);
 
             foreach ($_affected['A'] as $path => $info) {
+
+                if ('dir' == $info['kind'] && !empty ($info['from'])) {
+                    $this->printDebug("# dir $path added from {$info['from']}");
+                    // replace old paths with the new one
+                    $length = strlen($info['from']);
+
+                    foreach ($affected as $type => &$data) {
+                        if ('D' == $type) {
+                            continue;
+                        }
+
+                        foreach ($data as $_path => $_info) {
+                            if ((substr($_path, 0, $length) == $info['from'])) {
+                                $this->printDebug("# path $_path affected by added $path from {$info['from']}");
+                                // when affected path we found modify it to make it accessible later when base path changed
+                                unset($data[$_path]);
+
+                                $_path        = str_replace($info['from'], $path, $_path);
+                                $data[$_path] = $_info;
+                            }
+                        }
+                    }
+                }
 
                 unset($affected['D'][$path]);
                 unset($affected['M'][$path]);
@@ -307,10 +329,6 @@ class SvnShell {
             }
 
             foreach ($_affected['D'] as $path => $info) {
-                if (array_key_exists($path, $affected['A'])) {
-                    echo "$path was added in prev rev\n";
-                }
-
                 unset($affected['A'][$path]);
                 unset($affected['M'][$path]);
                 unset($affected['R'][$path]);
@@ -338,7 +356,6 @@ class SvnShell {
             ksort($items);
 
             foreach ($items as $path => $info) {
-
                 $output = array();
                 $format = $this->getCfg('format');
 
@@ -355,7 +372,10 @@ class SvnShell {
                 }
 
                 if (in_array('P', $format)) {
-                    $output[] = $path;
+                    if (in_array('K', $format)) {
+                        $output[] = str_pad($info['kind'], 4, ' ', STR_PAD_LEFT);
+                    }
+                    $output[] = '[' . $path . '] {' . $info['from'] . '}';
                 }
 
                 echo $this->formatString(join('  ', $output), $type), "\n";
@@ -613,6 +633,8 @@ class SvnShell {
             die();
         }
 
+
+//        var_dump( $output); echo "\n";
         $ret = array(
             'author' => $values[$tags['author'][0]]['value'],
             'date'   => $values[$tags['date'][0]]['value'],
@@ -623,10 +645,19 @@ class SvnShell {
             $ret['paths'] = array();
 
             foreach ($tags['path'] as $pos) {
+                $path = str_replace($this->info['prefix'], '', $values[$pos]['value']);
+
+                if (empty($path)) {
+                    continue;
+                }
+
                 $ret['paths'][] = array(
-                    'kind'   => $values[$pos]['attributes']['kind'],
+                    'kind'   => $values[$pos]['attributes']['kind'], // TODO: show kind in output
                     'action' => $values[$pos]['attributes']['action'],
-                    'path'   => $values[$pos]['value'],
+                    'from'   => isset($values[$pos]['attributes']['copyfrom-path'])
+                        ? str_replace($this->info['prefix'], '', $values[$pos]['attributes']['copyfrom-path'])
+                        : null,
+                    'path'   => $path,
                 );
             }
         }
@@ -648,22 +679,19 @@ class SvnShell {
             return $affected;
         }
 
-        foreach ($log['paths'] as $path) {
-            $path['path'] = str_replace($this->info['prefix'], '', $path['path']);
+        foreach ($log['paths'] as $path_info) {
 
-            if (empty($path['path'])) {
-                continue;
-            }
-
-            switch ($path['action']) {
+            switch ($path_info['action']) {
                 case 'A':
                 case 'D':
                 case 'M':
                 case 'R': // props changed
-                    $affected[$path['action']][$path['path']] = array('author' => $log['author'], 'rev' => $rev);
+                    $path_info['rev']                                   = $rev;
+                    $path_info['author']                                = $log['author'];
+                    $affected[$path_info['action']][$path_info['path']] = $path_info;
                     break;
                 default:
-                    fprintf(STDERR, $this->formatString("ERROR: UNKNOWN STATUS: " . $path['action'] . ", path: " . $path['path'], 'err') . "\n");
+                    fprintf(STDERR, $this->formatString("ERROR: UNKNOWN STATUS: " . $path_info['action'] . ", path: " . $path_info['path'], 'err') . "\n");
                     die();
             }
         }
