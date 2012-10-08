@@ -44,6 +44,7 @@ class SvnShell {
         'found_date'   => 'blue',
         'found_msg'    => 'white',
         'err'          => 'bold_red',
+        'warn'         => 'bold_red',
         'debug'        => 'yellow',
         'clear'        => 'clear'
     );
@@ -126,34 +127,20 @@ class SvnShell {
             $this->command_args .= ' --password ' . $this->getCfg('password');
         }
 
-        $command = 'svn info ' . $this->command_args . ' ' . $this->getCfg('target') . ' 2>&1';
+        $this->info = $this->getRepoInfo($this->getCfg('target'));
 
-        // TODO: if local repo version is older then remote repo version prompt warning
+        // should we get info from server?
+        list ($pure_target, $forced_rev) = explode('@', $this->getCfg('target'));
 
-        $this->printDebug("# username: " . $this->getCfg('user') . "  password: " . $this->getCfg('password') . "  target: " . $this->getCfg('target'));
-        $this->printDebug("# command: $command");
+        if (empty($forced_rev) && $pure_target != $this->info['url']) {
+            $this->printDebug("# local target: $pure_target, remote: {$this->info['url']}");
 
-        $output = shell_exec($command);
+            $latest_info = $this->getRepoInfo($this->info['url']);
 
-        $parser = xml_parser_create();
-
-        xml_parser_set_option($parser, XML_OPTION_CASE_FOLDING, 0);
-        xml_parser_set_option($parser, XML_OPTION_SKIP_WHITE, 1);
-        xml_parse_into_struct($parser, $output, $values, $tags);
-        xml_parser_free($parser);
-
-        if (!isset($tags['url'])) {
-            fprintf(STDERR, $this->formatString("Could not get repository info", 'err') . "\n");
-            die();
+            if ($latest_info['revision'] != $this->info['revision']) {
+                fprintf(STDERR, $this->formatString("Warning, local revision: {$this->info['revision']}, remote: {$latest_info['revision']}", 'warn') . "\n");
+            }
         }
-
-        $this->info = array(
-            'url'      => $values[$tags['url'][0]]['value'],
-            'root'     => $values[$tags['root'][0]]['value'],
-            'revision' => $values[$tags['commit'][0]]['attributes']['revision'],
-        );
-
-        $this->info['prefix'] = str_replace($this->info['root'], '', $this->info['url']);
 
         if ($this->getCfg('verbose')) {
             echo $this->formatString('! ' . $this->info['url'] . '@' . $this->info['revision'], '!'), "\n";
@@ -375,7 +362,7 @@ class SvnShell {
                     if (in_array('K', $format)) {
                         $output[] = str_pad($info['kind'], 4, ' ', STR_PAD_LEFT);
                     }
-                    $output[] = '[' . $path . '] {' . $info['from'] . '}';
+                    $output[] = $path;
                 }
 
                 echo $this->formatString(join('  ', $output), $type), "\n";
@@ -383,6 +370,36 @@ class SvnShell {
         }
 
         return $affected;
+    }
+
+    private function getRepoInfo($target) {
+        $command = 'svn info ' . $this->command_args . ' ' . $target . ' 2>&1';
+
+        $this->printDebug("# repo info, username: " . $this->getCfg('user') . "  password: " . $this->getCfg('password') . "  target: " . $this->getCfg('target'));
+        $this->printDebug("# command: $command");
+
+        $output = shell_exec($command);
+        $parser = xml_parser_create();
+
+        xml_parser_set_option($parser, XML_OPTION_CASE_FOLDING, 0);
+        xml_parser_set_option($parser, XML_OPTION_SKIP_WHITE, 1);
+        xml_parse_into_struct($parser, $output, $values, $tags);
+        xml_parser_free($parser);
+
+        if (!isset($tags['url'])) {
+            fprintf(STDERR, $this->formatString("Error, could not get repository info", 'err') . "\n");
+            die();
+        }
+
+        $info = array(
+            'url'      => $values[$tags['url'][0]]['value'],
+            'root'     => $values[$tags['root'][0]]['value'],
+            'revision' => $values[$tags['commit'][0]]['attributes']['revision'],
+        );
+
+        $info['prefix'] = str_replace($info['root'], '', $info['url']);
+
+        return $info;
     }
 
     private function initConfig($used_opts, $defaults) {
@@ -629,7 +646,7 @@ class SvnShell {
         xml_parser_free($parser);
 
         if (!isset($tags['log'])) {
-            fprintf(STDERR, $this->formatString("Could not get repository info", 'err') . "\n");
+            fprintf(STDERR, $this->formatString("Error, could not get repository info", 'err') . "\n");
             die();
         }
 
@@ -652,7 +669,7 @@ class SvnShell {
                 }
 
                 $ret['paths'][] = array(
-                    'kind'   => $values[$pos]['attributes']['kind'], // TODO: show kind in output
+                    'kind'   => $values[$pos]['attributes']['kind'],
                     'action' => $values[$pos]['attributes']['action'],
                     'from'   => isset($values[$pos]['attributes']['copyfrom-path'])
                         ? str_replace($this->info['prefix'], '', $values[$pos]['attributes']['copyfrom-path'])
@@ -691,7 +708,7 @@ class SvnShell {
                     $affected[$path_info['action']][$path_info['path']] = $path_info;
                     break;
                 default:
-                    fprintf(STDERR, $this->formatString("ERROR: UNKNOWN STATUS: " . $path_info['action'] . ", path: " . $path_info['path'], 'err') . "\n");
+                    fprintf(STDERR, $this->formatString("Error, unknown status: " . $path_info['action'] . ", path: " . $path_info['path'], 'err') . "\n");
                     die();
             }
         }
@@ -720,7 +737,7 @@ class SvnShell {
             try {
                 $p = new DateTime($p);
             } catch (Exception $e) {
-                fprintf(STDERR, $this->formatString('Invalid DateTime string: ' . $p, 'err') . "\n");
+                fprintf(STDERR, $this->formatString('Error, unable to parse DateTime string: ' . $p . ' (' . $e->getMessage() . ')', 'err') . "\n");
                 die();
             }
         }
