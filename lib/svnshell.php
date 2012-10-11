@@ -451,39 +451,45 @@ class SvnShell {
     }
 
     private function _initConfigUser($short, $long, $default) {
+        $env = getenv('SVN_USERNAME');
+
         return (!empty($short)
             ? $short
             : (!empty($long)
                 ? $long
-                : (!empty($default)
-                    ? $default
-                    : getenv('SVN_USERNAME')
+                : (!empty($env)
+                    ? $env
+                    : $default
                 )
             )
         );
     }
 
     private function _initConfigPassword($short, $long, $default) {
+        $env = getenv('SVN_PASSWORD');
+
         return (!empty($short)
             ? $short
             : (!empty($long)
                 ? $long
-                : (!empty($default)
-                    ? $default
-                    : getenv('SVN_PASSWORD')
+                : (!empty($env)
+                    ? $env
+                    : $default
                 )
             )
         );
     }
 
     private function _initConfigTarget($short, $long, $default) {
+        $env = getenv('SVN_TARGET');
+
         return (!empty($short)
             ? $short
             : (!empty($long)
                 ? $long
-                : (!empty($default)
-                    ? $default
-                    : getenv('SVN_TARGET')
+                : (!empty($env)
+                    ? $env
+                    : $default
                 )
             )
         );
