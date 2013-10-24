@@ -4,7 +4,7 @@
  * Command line utility to see affected files by specific revisions
  *
  *
- * Copyright (c) 2012 Ben Pinepain <pinepain@gmail.com>
+ * Copyright (c) 2013 Bogdan Padalko <zaq178miami@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -83,11 +83,11 @@ Output format:
         M   - file/directory was modified
         R   - file/directory was replaced
 
-Copyright (c) 2012 Ben Pinepain <pinepain@gmail.com>
+Copyright (c) 2013 Bogdan Padalko <zaq178miami@gmail.com>
 
 HEDEDOC;
 
-$shell = new SvnShell('hcdfprtuv', array('f'=> 'P', 't' => '.'), $help);
+$shell = new SvnShell('hcdfprtuv', array('f' => 'P', 't' => '.'), $help);
 
 
 $shell->showAffectedFilesInRevisions();

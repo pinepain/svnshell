@@ -3,7 +3,7 @@
  * A PHP class to do implement features that Subversion SVN client should have had from the cradle
  *
  *
- * Copyright (c) 2012 Ben Pinepain <pinepain@gmail.com>
+ * Copyright (c) 2013 Bogdan Padalko <zaq178miami@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -25,7 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-class SvnShell {
+class SvnShell
+{
     private $c;
 
     private $command_args = '';
@@ -84,13 +85,16 @@ class SvnShell {
         ),
         'r' => array(
             'name' => 'revisions',
-            'val'  => '::'),
+            'val'  => '::'
+        ),
         's' => array(
             'name' => 'stop',
-            'val'  => '::'),
+            'val'  => '::'
+        ),
         't' => array(
             'name' => 'target',
-            'val'  => '::'),
+            'val'  => '::'
+        ),
         'u' => array(
             'name' => 'user',
             'val'  => '::'
@@ -102,7 +106,8 @@ class SvnShell {
     );
 
 
-    public function __construct($used_opts, array $defaults = array(), $help = '') {
+    public function __construct($used_opts, array $defaults = array(), $help = '')
+    {
         $this->initConfig($used_opts, $defaults);
 
         if ($this->getCfg('help')) {
@@ -147,13 +152,13 @@ class SvnShell {
         }
     }
 
-    public function showMatchedRevisions() {
+    public function showMatchedRevisions()
+    {
         $between  = $this->getDateTimeIntervalFromString($this->getCfg('between'));
         $stop_rev = $this->getRevisionsListFromString($this->getCfg('stop'));
         $stop_rev = array_shift($stop_rev);
         $author   = $this->getCfg('author');
         $message  = $this->getCfg('message');
-
 
         $start_rev = $this->info['revision'];
 
@@ -195,7 +200,6 @@ class SvnShell {
                 $this->printDebug('date ' . $info['date']->format(DateTime::RFC1036) . ' less than start date ' . $between[0]->format(DateTime::RFC1036));
                 break;
             }
-
 
             if ('/' == $author[0]) {
                 $m_author = preg_match($author, $info['author']);
@@ -246,8 +250,7 @@ class SvnShell {
             }
 
             if (in_array('C', $format)) {
-                $output[] = $this->formatString($info['msg'], 'found_msg');
-                ;
+                $output[] = $this->formatString($info['msg'], 'found_msg');;
             }
 
             $found_revs_count++;
@@ -264,7 +267,8 @@ class SvnShell {
 
     }
 
-    public function showAffectedFilesInRevisions() {
+    public function showAffectedFilesInRevisions()
+    {
         $revs_list = $this->getRevisionsListFromString($this->getCfg('revisions'));
 
         if ($this->getCfg('verbose')) {
@@ -372,7 +376,8 @@ class SvnShell {
         return $affected;
     }
 
-    private function getRepoInfo($target) {
+    private function getRepoInfo($target)
+    {
         $command = 'svn info ' . $this->command_args . ' ' . $target . ' 2>&1';
 
         $this->printDebug("# repo info, username: " . $this->getCfg('user') . "  password: " . $this->getCfg('password') . "  target: " . $this->getCfg('target'));
@@ -402,7 +407,8 @@ class SvnShell {
         return $info;
     }
 
-    private function initConfig($used_opts, $defaults) {
+    private function initConfig($used_opts, $defaults)
+    {
         $short = '';
         $long  = array();
 
@@ -419,7 +425,6 @@ class SvnShell {
 
         $opts = getopt($short, $long);
 
-
         foreach ($used_opts as $o) {
 
             if ($this->getCfg('help')) {
@@ -431,16 +436,19 @@ class SvnShell {
                 throw new Exception("No handler defined for {$this->opts[$o]['name']} option (method $handler not found)");
             }
 
-            $this->opts[$this->opts[$o]['name']] = call_user_func(array(&$this, $handler),
-                                                                  isset($opts[$o]) ? $opts[$o] : null,
-                                                                  isset($opts[$this->opts[$o]['name']]) ? $opts[$this->opts[$o]['name']] : null,
+            $this->opts[$this->opts[$o]['name']] = call_user_func(
+                array(&$this, $handler),
+                isset($opts[$o]) ? $opts[$o] : null,
+                isset($opts[$this->opts[$o]['name']]) ? $opts[$this->opts[$o]['name']] : null,
 
-                                                                  isset($defaults[$o]) ? $defaults[$o] : null);
+                isset($defaults[$o]) ? $defaults[$o] : null
+            );
 
         }
     }
 
-    private function __initConfigNonEmptyShortOrLongOrDefaultIf($short, $long, $default) {
+    private function __initConfigNonEmptyShortOrLongOrDefaultIf($short, $long, $default)
+    {
         return (!empty($short)
             ? $short
             : (!empty($long)
@@ -450,7 +458,8 @@ class SvnShell {
         );
     }
 
-    private function _initConfigUser($short, $long, $default) {
+    private function _initConfigUser($short, $long, $default)
+    {
         $env = getenv('SVN_USERNAME');
 
         return (!empty($short)
@@ -465,7 +474,8 @@ class SvnShell {
         );
     }
 
-    private function _initConfigPassword($short, $long, $default) {
+    private function _initConfigPassword($short, $long, $default)
+    {
         $env = getenv('SVN_PASSWORD');
 
         return (!empty($short)
@@ -480,7 +490,8 @@ class SvnShell {
         );
     }
 
-    private function _initConfigTarget($short, $long, $default) {
+    private function _initConfigTarget($short, $long, $default)
+    {
         $env = getenv('SVN_TARGET');
 
         return (!empty($short)
@@ -495,7 +506,8 @@ class SvnShell {
         );
     }
 
-    private function _initConfigFormat($short, $long, $default) {
+    private function _initConfigFormat($short, $long, $default)
+    {
 
         $format = !is_null($short)
             ? $short
@@ -512,21 +524,25 @@ class SvnShell {
         return explode(',', $format);
     }
 
-    private function _initConfigColored($short, $long, $default) {
-        return posix_isatty(STDOUT)
+    private function _initConfigColored($short, $long, $default)
+    {
+        return true //posix_isatty(STDOUT)
             ? (null !== $short || null !== $long)
             : $default;
     }
 
-    private function _initConfigVerbose($short, $long, $default) {
+    private function _initConfigVerbose($short, $long, $default)
+    {
         return (null !== $short || null !== $long) || $default;
     }
 
-    private function _initConfigDebug($short, $long, $default) {
+    private function _initConfigDebug($short, $long, $default)
+    {
         return (null !== $short || null !== $long) || $default;
     }
 
-    private function _initConfigRevisions($short, $long, $default) {
+    private function _initConfigRevisions($short, $long, $default)
+    {
         $revs = (!empty($short)
             ? $short
             : (!empty($long)
@@ -547,23 +563,28 @@ class SvnShell {
         return $revs;
     }
 
-    private function _initConfigAuthor($short, $long, $default) {
+    private function _initConfigAuthor($short, $long, $default)
+    {
         return $this->__initConfigNonEmptyShortOrLongOrDefaultIf($short, $long, $default);
     }
 
-    private function _initConfigMessage($short, $long, $default) {
+    private function _initConfigMessage($short, $long, $default)
+    {
         return $this->__initConfigNonEmptyShortOrLongOrDefaultIf($short, $long, $default);
     }
 
-    private function _initConfigBetween($short, $long, $default) {
+    private function _initConfigBetween($short, $long, $default)
+    {
         return $this->__initConfigNonEmptyShortOrLongOrDefaultIf($short, $long, $default);
     }
 
-    private function _initConfigStop($short, $long, $default) {
+    private function _initConfigStop($short, $long, $default)
+    {
         return $this->__initConfigNonEmptyShortOrLongOrDefaultIf($short, $long, $default);
     }
 
-    private function _initConfigHelp($short, $long, $default) {
+    private function _initConfigHelp($short, $long, $default)
+    {
         return (null !== $short || null !== $long || null !== $default);
     }
 
@@ -574,13 +595,15 @@ class SvnShell {
      *
      * @return mixed Config value
      */
-    private function getCfg($name) {
+    private function getCfg($name)
+    {
         return isset($this->opts[$name])
             ? $this->opts[$name]
             : null;
     }
 
-    private function formatString($str, $theme = '') {
+    private function formatString($str, $theme = '')
+    {
         if (!empty($theme) && isset($this->colors[$theme]) && $this->getCfg('colored')) {
             $str = $this->c->{$this->colors[$theme]}($str);
         }
@@ -588,13 +611,15 @@ class SvnShell {
         return $str;
     }
 
-    private function printDebug($str, $add_new_line = true) {
+    private function printDebug($str, $add_new_line = true)
+    {
         if ($this->getCfg('debug') && $this->getCfg('verbose')) {
             echo $this->formatString($str, 'debug', $add_new_line), ($add_new_line ? "\n" : '');
         }
     }
 
-    private function getRevisionsListFromString($str) {
+    private function getRevisionsListFromString($str)
+    {
         $str = str_ireplace('HEAD', $this->info['revision'], $str);
         $str = preg_replace('/[^0-9:,]/', '', $str);
         $str = explode(',', $str);
@@ -619,7 +644,9 @@ class SvnShell {
                 }
 
                 $range[1]++;
-                for ($i = $range[0]; $i < $range[1]; $revs[$i] = $i, $i++) ;
+                for ($i = $range[0]; $i < $range[1]; $revs[$i] = $i, $i++) {
+                    ;
+                }
             } else {
                 if ($range[0] > $this->info['revision']) {
                     $range[0] = $this->info['revision'];
@@ -633,7 +660,8 @@ class SvnShell {
         return $revs;
     }
 
-    private function getRevisionLog($rev, $with_path = false) {
+    private function getRevisionLog($rev, $with_path = false)
+    {
         if ($with_path) {
             $with_path = ' --verbose    ';
         } else {
@@ -656,7 +684,6 @@ class SvnShell {
             die();
         }
 
-
 //        var_dump( $output); echo "\n";
         $ret = array(
             'author' => $values[$tags['author'][0]]['value'],
@@ -678,8 +705,8 @@ class SvnShell {
                     'kind'   => $values[$pos]['attributes']['kind'],
                     'action' => $values[$pos]['attributes']['action'],
                     'from'   => isset($values[$pos]['attributes']['copyfrom-path'])
-                        ? str_replace($this->info['prefix'], '', $values[$pos]['attributes']['copyfrom-path'])
-                        : null,
+                            ? str_replace($this->info['prefix'], '', $values[$pos]['attributes']['copyfrom-path'])
+                            : null,
                     'path'   => $path,
                 );
             }
@@ -688,7 +715,8 @@ class SvnShell {
         return $ret;
     }
 
-    private function getAffectedFilesInRevision($rev) {
+    private function getAffectedFilesInRevision($rev)
+    {
         $affected = array(
             'A' => array(),
             'D' => array(),
@@ -732,7 +760,8 @@ class SvnShell {
         return $affected;
     }
 
-    private function getDateTimeIntervalFromString($interval) {
+    private function getDateTimeIntervalFromString($interval)
+    {
         if (false === strpos($interval, '~')) {
             $interval .= '~';
         }

@@ -6,7 +6,7 @@
  * @see http://www.php.net/manual/en/function.spl-autoload.php#92767
  *
  *
- * Copyright (c) 2012 Ben Pinepain <pinepain@gmail.com>
+ * Copyright (c) 2013 Bogdan Padalko <zaq178miami@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -35,6 +35,8 @@ set_include_path(get_include_path() . PATH_SEPARATOR . dirname(__FILE__));
  *
  * @codeCoverageIgnore
  */
-spl_autoload_register(function($class_name) {
-    spl_autoload($class_name);
-});
+spl_autoload_register(
+    function ($class_name) {
+        spl_autoload($class_name);
+    }
+);

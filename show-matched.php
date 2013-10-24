@@ -4,7 +4,7 @@
  * Command line utility to find revisions by message, author within a date and time range
  *
  *
- * Copyright (c) 2012 Ben Pinepain <pinepain@gmail.com>
+ * Copyright (c) 2013 Bogdan Padalko <zaq178miami@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -79,7 +79,7 @@ Output format:
 Pattern syntax:
     To enable regular expression usage PATTERN should starts with the slash character (/)
 
-Copyright (c) 2012 Ben Pinepain <pinepain@gmail.com>
+Copyright (c) 2013 Bogdan Padalko <zaq178miami@gmail.com>
 
 HEDEDOC;
 
